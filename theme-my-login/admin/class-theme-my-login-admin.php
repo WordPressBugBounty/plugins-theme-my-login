@@ -61,14 +61,17 @@ final class Theme_My_Login_Admin {
 	 *                not have the capability required.
 	 */
 	public function add_menu_item( $args = array() ) {
-		$args = wp_parse_args( $args, array(
-			'page_title'  => '',
-			'menu_title'  => '',
-			'menu_slug'   => '',
-			'parent_slug' => 'theme-my-login',
-			'capability'  => 'manage_options',
-			'function'    => 'tml_admin_settings_page',
-		) );
+		$args = wp_parse_args(
+			$args,
+			array(
+				'page_title'  => '',
+				'menu_title'  => '',
+				'menu_slug'   => '',
+				'parent_slug' => 'theme-my-login',
+				'capability'  => 'manage_options',
+				'function'    => 'tml_admin_settings_page',
+			)
+		);
 
 		if ( empty( $args['page_title'] ) || empty( $args['menu_title'] ) || empty( $args['menu_slug'] ) ) {
 			return;
@@ -115,6 +118,7 @@ final class Theme_My_Login_Admin {
 	 * Get a page hook.
 	 *
 	 * @since 7.0
+	 * @deprecated 7.1.15 Unused internally, with no known external callers.
 	 *
 	 * @param string $page The plugin page.
 	 * @return string The page hook.
