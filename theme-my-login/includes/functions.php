@@ -244,7 +244,7 @@ function tml_body_class( $classes ) {
 function tml_enqueue_styles() {
 	$suffix = SCRIPT_DEBUG ? '' : '.min';
 
-	wp_enqueue_style( 'theme-my-login', THEME_MY_LOGIN_URL . "assets/styles/theme-my-login$suffix.css", array(), THEME_MY_LOGIN_VERSION );
+	wp_enqueue_style( 'theme-my-login', THEME_MY_LOGIN_URL . "assets/styles/theme-my-login$suffix.css", array( 'dashicons' ), THEME_MY_LOGIN_VERSION );
 }
 
 /**
@@ -273,6 +273,15 @@ function tml_enqueue_scripts() {
 	wp_enqueue_script( 'theme-my-login', THEME_MY_LOGIN_URL . "assets/scripts/theme-my-login$suffix.js", $dependencies, THEME_MY_LOGIN_VERSION, true );
 
 	/**
+	 * Filter whether to autofocus the primary field on TML forms.
+	 *
+	 * @since 7.2.0
+	 *
+	 * @param bool $autofocus Whether to autofocus the primary field. Default true.
+	 */
+	$autofocus = (bool) apply_filters( 'tml_autofocus', true );
+
+	/**
 	 * Filter the main TML script data.
 	 *
 	 * @since 7.0.15
@@ -282,8 +291,13 @@ function tml_enqueue_scripts() {
 	$data = apply_filters(
 		'tml_script_data',
 		array(
-			'action' => tml_is_action() ? tml_get_action()->get_name() : '',
-			'errors' => tml_get_errors()->get_error_codes(),
+			'action'            => tml_is_action() ? tml_get_action()->get_name() : '',
+			'errors'            => tml_get_errors()->get_error_codes(),
+			'autofocus'         => $autofocus,
+			// phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- reuses WP core's translated wp-login.php strings verbatim.
+			'showPasswordLabel' => __( 'Show password' ),
+			// phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- reuses WP core's translated wp-login.php strings verbatim.
+			'hidePasswordLabel' => __( 'Hide password' ),
 		)
 	);
 

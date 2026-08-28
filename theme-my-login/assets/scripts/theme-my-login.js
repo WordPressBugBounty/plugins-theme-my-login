@@ -51,7 +51,7 @@
 	function initFocus() {
 		var userLogin, key;
 
-		if ( ! themeMyLogin.action ) {
+		if ( ! themeMyLogin.action || ! themeMyLogin.autofocus ) {
 			return;
 		}
 
@@ -128,5 +128,38 @@
 
 	$( document ).ready( function() {
 		$( '#pass1' ).val( '' ).on( 'keyup paste', checkPasswordStrength );
+	} );
+} )( jQuery );
+
+( function ( $ ) {
+
+	var $pass2 = $( '#pass2' );
+
+	if ( ! $pass2.length ) {
+		return;
+	}
+
+	$pass2.closest( '.tml-field-wrap' ).hide();
+
+	$( '#pass1' ).on( 'input', function() {
+		$pass2.val( $( this ).val() );
+	} );
+
+} )( jQuery );
+
+( function ( $ ) {
+
+	$( '.tml' ).on( 'click', '.tml-toggle-pwd', function() {
+		var button = $( this ),
+			input = button.siblings( 'input' ),
+			isHidden = 'password' === input.attr( 'type' );
+
+		input.attr( 'type', isHidden ? 'text' : 'password' );
+
+		button
+			.attr( 'aria-label', isHidden ? themeMyLogin.hidePasswordLabel : themeMyLogin.showPasswordLabel )
+			.find( '.dashicons' )
+				.toggleClass( 'dashicons-hidden', isHidden )
+				.toggleClass( 'dashicons-visibility', ! isHidden );
 	} );
 } )( jQuery );

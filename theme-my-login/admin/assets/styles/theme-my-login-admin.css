@@ -1,14 +1,16 @@
 .tml-extensions-wrap {
 	margin: 0 -15px;
 }
-.tml-extensions-wrap:after {
-	content: "";
-	clear: both;
-	display: table;
-}
-.tml-extensions-wrap * {
-	box-sizing: border-box;
-}
+
+	.tml-extensions-wrap:after {
+		content: "";
+		clear: both;
+		display: table;
+	}
+
+	.tml-extensions-wrap * {
+		box-sizing: border-box;
+	}
 
 .tml-extension {
 	background-color: #fff;
@@ -18,16 +20,20 @@
 	margin: 15px;
 	max-width: 350px;
 }
+
 @media (min-width: 576px) {
-	.tml-extension {
-		width: 40%;
-	}
+
+.tml-extension {
+		width: 40%
 }
+	}
+
 @media (min-width: 783px) {
-	.tml-extension {
-		width: 30%;
-	}
+
+.tml-extension {
+		width: 30%
 }
+	}
 
 .tml-extension-image {
 	height: auto;
@@ -37,9 +43,10 @@
 .tml-extension-body {
 	padding: 15px;
 }
+
 .tml-extension-body p {
-	min-height: 5em;
-}
+		min-height: 5em;
+	}
 
 .tml-extension-title {
 	margin: 0 0 15px;
@@ -78,21 +85,25 @@
 	text-decoration: none;
 }
 
-#tml-settings input[type=text].tml-license-valid {
-	background-color: #b5e1b9;
-	border-color: #46b450;
-}
-#tml-settings input[type=text].tml-license-invalid {
-	background-color: #f1adad;
-	border-color: #dc3232;
-}
+#tml-settings input[type="text"].tml-license-valid {
+			background-color: #b5e1b9;
+			border-color: #46b450;
+		}
+
+#tml-settings input[type="text"].tml-license-invalid {
+			background-color: #f1adad;
+			border-color: #dc3232;
+		}
+
 #tml-settings p.tml-license-valid {
-	color: #46b450;
-}
+			color: #46b450;
+		}
+
 #tml-settings p.tml-license-invalid {
-	color: #dc3232;
-}
+			color: #dc3232;
+		}
+
 #tml-settings .spinner {
-	float: none;
-	margin-top: 0;
-}
+		float: none;
+		margin-top: 0;
+	}
