@@ -114,6 +114,7 @@ function tml_add_extension_data_to_plugins_api( $result = false, $action = '', $
 			'license' => $extension->get_license_key(),
 			'item_id' => $extension->get_item_id(),
 			'slug'    => $extension->get_name(),
+			'url'     => home_url(),
 		)
 	);
 	if ( $result ) {
@@ -145,6 +146,7 @@ function tml_add_extension_data_to_plugins_transient( $transient = '' ) {
 				'license' => $extension->get_license_key(),
 				'item_id' => $extension->get_item_id(),
 				'slug'    => $extension->get_name(),
+				'url'     => home_url(),
 			)
 		);
 
@@ -327,6 +329,86 @@ function tml_check_extension_license( $extension ) {
 }
 
 /**
+ * Unserialize a value if it is serialized, without allowing any objects.
+ *
+ * Behaves like `maybe_unserialize()`, except it restricts unserialization to
+ * plain arrays/scalars so a tampered store response can't instantiate an
+ * object and trigger a PHP object injection gadget chain.
+ *
+ * @since 7.2.1
+ *
+ * @param mixed $value The value to unserialize.
+ * @return mixed The unserialized value, or the original value if it wasn't serialized.
+ */
+function tml_maybe_unserialize_no_objects( $value ) {
+	if ( is_serialized( $value ) ) {
+		return unserialize( $value, array( 'allowed_classes' => false ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize -- allowed_classes is set to disable object injection.
+	}
+
+	return $value;
+}
+
+/**
+ * Get the default arguments for an extension store API call.
+ *
+ * @since 7.2.1
+ *
+ * @return array The default arguments.
+ */
+function tml_get_extension_api_call_arg_defaults() {
+	return array(
+		'edd_action' => 'get_version',
+		'license'    => '',
+		'item_id'    => '',
+		'slug'       => '',
+		'url'        => '',
+		'beta'       => false,
+	);
+}
+
+/**
+ * Get the cache key tml_extension_api_call() uses for a given set of args.
+ *
+ * @since 7.2.1
+ *
+ * @param array $args The already-defaulted API call args.
+ * @return string The cache key.
+ */
+function tml_get_extension_api_call_cache_key( $args ) {
+	// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- one-way hash input for a cache key, never unserialized; no object-injection risk.
+	return md5( serialize( $args ) );
+}
+
+/**
+ * Clear the persistent extension version-check cache for every registered extension.
+ *
+ * Keeps the per-extension cache in sync with WordPress's own invalidation of
+ * its `update_plugins` transient (e.g. after installing or updating a
+ * plugin), the same way EDD_SL_Plugin_Updater does, instead of leaving it
+ * stuck serving a stale response for its full lifetime.
+ *
+ * @since 7.2.1
+ */
+function tml_clear_extension_version_check_cache() {
+	foreach ( tml_get_extensions() as $extension ) {
+		$args = wp_parse_args(
+			array(
+				'license' => $extension->get_license_key(),
+				'item_id' => $extension->get_item_id(),
+				'slug'    => $extension->get_name(),
+				'url'     => home_url(),
+			),
+			tml_get_extension_api_call_arg_defaults()
+		);
+
+		$cache_key = tml_get_extension_api_call_cache_key( $args );
+
+		wp_cache_delete( $cache_key, 'tml_api_calls' );
+		delete_site_transient( 'tml_api_call-' . $cache_key );
+	}
+}
+
+/**
  * Make an API call the store of an extension.
  *
  * @since 7.0
@@ -345,22 +427,21 @@ function tml_check_extension_license( $extension ) {
  * @return object|false The response object or false on failure.
  */
 function tml_extension_api_call( $url, $args = array() ) {
-	$args = wp_parse_args(
-		$args,
-		array(
-			'edd_action' => 'get_version',
-			'license'    => '',
-			'item_id'    => '',
-			'slug'       => '',
-			'url'        => '',
-			'beta'       => false,
-		)
-	);
+	$args = wp_parse_args( $args, tml_get_extension_api_call_arg_defaults() );
 
-	// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- one-way hash input for a cache key, never unserialized; no object-injection risk.
-	$cache_key = md5( serialize( $args ) );
+	// The passive version check is safe to cache across requests since it drives
+	// background/cron update checks; license activation/deactivation/status
+	// calls are one-off, user-initiated actions that must always reach the
+	// store live, so they're only deduped for the current request.
+	$cacheable = ( 'get_version' === $args['edd_action'] );
+
+	$cache_key = tml_get_extension_api_call_cache_key( $args );
 
 	$response = wp_cache_get( $cache_key, 'tml_api_calls' );
+	if ( ! $response && $cacheable ) {
+		$response = get_site_transient( 'tml_api_call-' . $cache_key );
+	}
+
 	if ( ! $response ) {
 		$response = wp_remote_post(
 			$url,
@@ -382,19 +463,22 @@ function tml_extension_api_call( $url, $args = array() ) {
 
 		if ( is_object( $response ) ) {
 			if ( isset( $response->sections ) ) {
-				$response->sections = maybe_unserialize( $response->sections );
+				$response->sections = tml_maybe_unserialize_no_objects( $response->sections );
 			}
 			if ( isset( $response->banners ) ) {
-				$response->banners = maybe_unserialize( $response->banners );
+				$response->banners = tml_maybe_unserialize_no_objects( $response->banners );
 			}
 			if ( isset( $response->icons ) ) {
-				$response->icons = maybe_unserialize( $response->icons );
+				$response->icons = tml_maybe_unserialize_no_objects( $response->icons );
 			}
 		} else {
 			$response = false;
 		}
 
 		wp_cache_set( $cache_key, $response, 'tml_api_calls' );
+		if ( $cacheable ) {
+			set_site_transient( 'tml_api_call-' . $cache_key, $response, DAY_IN_SECONDS / 2 );
+		}
 	}
 
 	return $response;

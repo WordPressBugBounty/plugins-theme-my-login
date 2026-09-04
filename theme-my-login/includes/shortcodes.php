@@ -69,8 +69,8 @@ function tml_shortcode( $atts = array() ) {
 
 		$content = $form->render( $args );
 
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- request_id/confirm_key are validated via wp_validate_user_request_key() in tml_confirmaction_handler() before this branch is ever reached.
-	} elseif ( 'confirmaction' === $action->get_name() && isset( $_GET['request_id'] ) ) {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- request_id/confirm_key are validated via wp_validate_user_request_key() in tml_confirmaction_handler(), which tml_is_action() confirms has already run (template_redirect, before this shortcode renders) without wp_die()'ing on an invalid key.
+	} elseif ( 'confirmaction' === $action->get_name() && tml_is_action( 'confirmaction' ) && isset( $_GET['request_id'] ) ) {
 		$content = _wp_privacy_account_request_confirmed_message( $_GET['request_id'] );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
@@ -80,7 +80,7 @@ function tml_shortcode( $atts = array() ) {
 		$content .= '<div class="tml-dashboard-avatar">' . get_avatar( get_current_user_id() ) . '</div>';
 
 		// translators: %s: Current user's display name.
-		$content .= '<p class="tml-dashboard-greeting">' . sprintf( __( 'Howdy, %s' ), wp_get_current_user()->display_name ) . '</p>'; // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- intentionally reusing WP core's translated "Howdy, %s" string (see wp-includes/admin-bar.php), not a TML-specific string.
+		$content .= '<p class="tml-dashboard-greeting">' . sprintf( __( 'Howdy, %s' ), esc_html( wp_get_current_user()->display_name ) ) . '</p>'; // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- intentionally reusing WP core's translated "Howdy, %s" string (see wp-includes/admin-bar.php), not a TML-specific string.
 
 		/**
 		 * Filter the dashboard links.
